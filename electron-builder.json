@@ -1,0 +1,26 @@
+{
+  "appId": "com.sunat.portable",
+  "productName": "SUNAT Portable",
+  "directories": {
+    "output": "dist"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "requestedExecutionLevel": "asInvoker"
+  },
+  "asar": false,
+  "files": [
+    "main.js",
+    "preload.js",
+    "src/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    "data/**/*"
+  ]
+}

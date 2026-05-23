@@ -1,0 +1,18 @@
+{
+  "name": "sunat-portable",
+  "version": "1.0.0",
+  "description": "App SUNAT Portable - Ingesta XML/PDF + Impresión Térmica",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --dir",
+    "build:dist": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3"
+  }
+}
