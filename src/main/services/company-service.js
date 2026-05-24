@@ -18,6 +18,28 @@ async function createCompany(data) {
   }
 }
 
+async function getCompanyById(id) {
+  await initDatabase();
+  return queryRow('SELECT * FROM companies WHERE id = ?', [id]);
+}
+
+async function updateCompany(data) {
+  await initDatabase();
+  const { id, name, ruc, address, phone, email, web, logo } = data;
+  if (!id) throw new Error('ID es obligatorio para actualizar');
+  if (!name || !ruc) throw new Error('Nombre y RUC son obligatorios');
+
+  try {
+    run(`UPDATE companies SET name=?, ruc=?, address=?, phone=?, email=?, web=?, logo_path=?, updated_at=datetime('now') WHERE id=?`,
+        [name, ruc, address||'', phone||'', email||'', web||'', logo||'', id]);
+    saveDatabase();
+    return { success: true };
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint failed: companies.ruc')) throw new Error('⚠️ Ya existe otra empresa con este RUC.');
+    throw err;
+  }
+}
+
 async function getAllActiveCompanies() {
   await initDatabase();
   return queryAll('SELECT id, name, ruc, logo_path, is_active FROM companies ORDER BY name');
@@ -44,4 +66,4 @@ async function toggleCompanyActive({ id, status }) {
   return { success: true };
 }
 
-module.exports = { createCompany, getAllActiveCompanies, updateActiveCompanyId, getActiveCompanyId, toggleCompanyActive };
+module.exports = { createCompany, getCompanyById, updateCompany, getAllActiveCompanies, updateActiveCompanyId, getActiveCompanyId, toggleCompanyActive };

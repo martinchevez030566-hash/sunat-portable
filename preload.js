@@ -12,7 +12,9 @@ contextBridge.exposeInMainWorld('sunatAPI', {
   storage: { getMode: () => ipcRenderer.invoke('storage:get-mode') },
   settings: { get: (k) => ipcRenderer.invoke('settings:get', k), update: (d) => ipcRenderer.invoke('settings:update', d) },
   company: { 
-    create: (d) => ipcRenderer.invoke('company:create', d), 
+    create: (d) => ipcRenderer.invoke('company:create', d),
+    getById: (id) => ipcRenderer.invoke('company:get-by-id', id), // 🔑 EXPUESTO CORRECTAMENTE
+    update: (d) => ipcRenderer.invoke('company:update', d),
     getAll: () => ipcRenderer.invoke('company:get-all'), 
     setActive: (id) => ipcRenderer.invoke('company:set-active', id), 
     getActiveId: () => ipcRenderer.invoke('company:get-active-id'), 
@@ -21,4 +23,5 @@ contextBridge.exposeInMainWorld('sunatAPI', {
   documents: { get: (p) => ipcRenderer.invoke('documents:get', p) },
   dialog: { selectImage: () => ipcRenderer.invoke('dialog:select-image') }
 });
-console.log('✅ [Preload] API expuesta.');
+
+console.log('✅ [Preload] API expuesta como window.sunatAPI (mayúsculas)');

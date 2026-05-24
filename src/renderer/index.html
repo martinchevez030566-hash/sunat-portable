@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'">
   <title>SUNAT Portable</title>
   <link rel="stylesheet" href="styles/main.css">
 </head>
@@ -40,8 +40,10 @@
 
       <section id="view-companies" class="view-section view-hidden">
         <div class="card"><div class="section-header"><h2>Mantenimiento de Empresas</h2><button id="btn-new-company" class="btn-primary">+ Nueva</button></div><table id="company-table"><thead><tr><th>ID</th><th>Razón Social</th><th>RUC</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="company-table-body"></tbody></table></div>
+        
         <div id="company-form-container" class="card view-hidden" style="margin-top:16px;">
           <h3 id="company-form-title">Nueva Empresa</h3>
+          <input type="hidden" id="cf-id">
           <div class="form-grid">
             <label>Razón Social *<input type="text" id="cf-name"></label>
             <label>RUC (11) *<input type="text" id="cf-ruc" maxlength="11"></label>
@@ -51,8 +53,8 @@
             <label>Web<input type="text" id="cf-web"></label>
           </div>
           <div style="margin-top:12px; display:flex; align-items:center; gap:12px;">
-            <label style="font-weight:500; font-size:0.85rem;">Logo Empresa:</label>
-            <button id="btn-select-logo" type="button" class="btn-secondary">📷 Seleccionar Imagen</button>
+            <label style="font-weight:500; font-size:0.85rem;">Logo:</label>
+            <button id="btn-select-logo" type="button" class="btn-secondary">📷 Seleccionar</button>
             <img id="logo-preview" style="height:32px; width:auto; display:none; border-radius:4px; border:1px solid #cbd5e1;">
           </div>
           <div class="btn-row"><button id="btn-save-company" class="btn-success">💾 Guardar</button><button id="btn-cancel-company" class="btn-secondary">Cancelar</button></div>
