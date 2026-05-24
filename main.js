@@ -14,12 +14,19 @@ function createWindow() {
     }
   });
   mainWindow.loadFile(path.join(__dirname, 'src/renderer/index.html'));
-  console.log('🖥️ Ventana cargada');
+  console.log('🖥️ Ventana cargada correctamente');
 }
 
 app.whenReady().then(async () => {
-  registerIpcHandlers();
-  createWindow();
+  console.log('🚀 Electron listo. Registrando IPC handlers...');
+  try {
+    registerIpcHandlers();
+    console.log('✅ Handlers OK. Creando ventana...');
+    createWindow();
+  } catch (err) {
+    console.error('❌ FATAL: Error registrando handlers:', err);
+    app.exit(1);
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -28,7 +35,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   closeDatabase();
-  console.log('🛑 App cerrando... DB guardada');
+  console.log('🛑 App cerrando. DB guardada.');
 });
 
 app.on('activate', () => {

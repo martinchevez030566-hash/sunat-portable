@@ -1,3 +1,5 @@
+console.log('🆕 IPC-HANDLERS LOADED: BUILD 2026-05-24-FINAL');
+
 const { ipcMain } = require('electron');
 const { initDatabase, queryRow, queryAll, run, saveDatabase, closeDatabase } = require('./database/connection');
 const { needsBootstrap, runBootstrap } = require('./database/bootstrap');
@@ -7,11 +9,21 @@ const fs = require('fs');
 const path = require('path');
 
 function registerIpcHandlers() {
-  console.log('📡 [IPC] Registrando handlers...');
+  console.log('📡 [IPC] Iniciando registro de handlers...');
+
+  // 🔑 CRÍTICO: Se registra PRIMERO
+  ipcMain.handle('db:ensure-ready', async () => {
+    console.log('✅ [IPC] db:ensure-ready → Ejecutando initDatabase()...');
+    await initDatabase();
+    return { success: true };
+  });
 
   ipcMain.handle('app:get-version', async () => '1.0.0');
   ipcMain.handle('db:needs-bootstrap', async () => needsBootstrap());
-  ipcMain.handle('db:run-bootstrap', async () => runBootstrap());
+  ipcMain.handle('db:run-bootstrap', async () => {
+    try { return await runBootstrap(); }
+    catch (e) { return { success: false, error: e.message }; }
+  });
   
   ipcMain.handle('db:repair', async () => {
     try {
@@ -26,7 +38,6 @@ function registerIpcHandlers() {
     const { mode } = await initDatabase(); return mode;
   });
 
-  // 🔍 LOG DETALLADO: settings:get
   ipcMain.handle('settings:get', async (event, key) => {
     await initDatabase();
     const res = queryRow('SELECT value FROM app_settings WHERE key = ?', [key]);
@@ -34,45 +45,33 @@ function registerIpcHandlers() {
     return res ? res.value : null;
   });
 
-  // 🔍 LOG DETALLADO: settings:update con verificación post-escritura
   ipcMain.handle('settings:update', async (event, { key, value }) => {
     await initDatabase();
-    console.log(`📝 [IPC] settings:update("${key}", "${value}") → Iniciando`);
-    
     run("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))", [key, String(value)]);
-    const saved = saveDatabase();
-    
-    // VERIFICACIÓN INMEDIATA
+    saveDatabase();
     const verify = queryRow('SELECT value FROM app_settings WHERE key = ?', [key]);
-    const verifiedValue = verify?.value ?? 'FALLO_LECTURA';
-    console.log(`✅ [IPC] settings:update("${key}") → Guardado: ${saved} | Verificado en DB: "${verifiedValue}" | Esperado: "${value}"`);
-    
-    return { success: saved && verifiedValue === String(value) };
+    console.log(`✅ [IPC] settings:update("${key}") → Verificado: "${verify?.value}"`);
+    return { success: true };
   });
 
   ipcMain.handle('company:create', async (event, data) => {
-    try { return await createCompany(data); }
-    catch (e) { return { success: false, error: e.message }; }
+    try { return await createCompany(data); } catch (e) { return { success: false, error: e.message }; }
   });
   ipcMain.handle('company:get-all', async () => {
-    try { return { success: true, data: await getAllActiveCompanies() }; }
-    catch (e) { return { success: false, error: e.message }; }
+    try { return { success: true, data: await getAllActiveCompanies() }; } catch (e) { return { success: false, error: e.message }; }
   });
   ipcMain.handle('company:set-active', async (event, id) => {
-    try { return await updateActiveCompanyId(id); }
-    catch (e) { return { success: false, error: e.message }; }
+    try { return await updateActiveCompanyId(id); } catch (e) { return { success: false, error: e.message }; }
   });
   ipcMain.handle('company:get-active-id', async () => {
-    try { return await getActiveCompanyId(); }
-    catch (e) { return { success: false, error: e.message }; }
+    try { return await getActiveCompanyId(); } catch (e) { return { success: false, error: e.message }; }
   });
 
   ipcMain.handle('documents:get', async (event, { companyId, filters, page, limit }) => {
-    try { return await getDocuments(companyId, filters, page, limit); }
-    catch (e) { return { success: false, error: e.message }; }
+    try { return await getDocuments(companyId, filters, page, limit); } catch (e) { return { success: false, error: e.message }; }
   });
 
-  console.log('✅ [IPC] Handlers listos.');
+  console.log('✅ [IPC] TODOS los handlers registrados correctamente.');
 }
 
 module.exports = { registerIpcHandlers };

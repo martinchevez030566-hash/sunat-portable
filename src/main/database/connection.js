@@ -32,15 +32,6 @@ async function initDatabase() {
       if (buffer.toString('utf8', 0, 15) !== 'SQLite format 3') throw new Error('Encabezado inválido');
       dbInstance = new SQL.Database(buffer);
       console.log(`✅ [DB] Cargada desde disco: ${fs.statSync(DB_PATH).size} bytes`);
-      
-      // LOG DE DIAGNÓSTICO: Volcar app_settings al cargar
-      console.log('📊 [DIAG] Contenido actual de app_settings:');
-      const settings = dbInstance.exec("SELECT key, value FROM app_settings");
-      if (settings.length && settings[0].values) {
-        settings[0].values.forEach(row => console.log(`   [DIAG] ${row[0]} = "${row[1]}"`));
-      } else {
-        console.log('   [DIAG] (tabla app_settings vacía o inexistente)');
-      }
     } else {
       dbInstance = new SQL.Database();
       console.log(`🆕 [DB] Nueva instancia en memoria`);
@@ -51,6 +42,23 @@ async function initDatabase() {
     dbInstance = new SQL.Database();
   }
 
+  // Auto-reparar esquema si falta app_settings
+  const tables = dbInstance.exec("SELECT name FROM sqlite_master WHERE type='table'");
+  const tableNames = tables[0]?.values.map(r => r[0]) || [];
+  if (!tableNames.includes('app_settings')) {
+    console.log('⚠️ [DB] Esquema incompleto. Aplicando schema.sql automáticamente...');
+    const schemaPath = path.resolve(__dirname, 'schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      dbInstance.exec(fs.readFileSync(schemaPath, 'utf8'));
+      saveDatabase();
+      console.log('✅ [DB] Esquema aplicado y guardado.');
+    }
+  }
+
+  // 🔍 DIAGNÓSTICO REAL: Volcar app_settings al cargar
+  const allSettings = queryAll("SELECT key, value FROM app_settings");
+  console.log('📊 [DIAG] app_settings en disco:', JSON.stringify(allSettings));
+
   return { db: dbInstance, mode: dbMode };
 }
 
@@ -58,8 +66,7 @@ function saveDatabase() {
   if (!dbInstance || dbMode !== 'ReadWrite') return false;
   try {
     const tmpPath = `${DB_PATH}.tmp`;
-    const buffer = Buffer.from(dbInstance.export());
-    fs.writeFileSync(tmpPath, buffer);
+    fs.writeFileSync(tmpPath, Buffer.from(dbInstance.export()));
     fs.renameSync(tmpPath, DB_PATH);
     console.log(`💾 [DB] Escritura atómica exitosa: ${fs.statSync(DB_PATH).size} bytes`);
     return true;
@@ -73,13 +80,15 @@ function closeDatabase() {
   if (dbInstance) { saveDatabase(); dbInstance.close(); dbInstance = null; console.log('🔌 [DB] Cerrada'); }
 }
 
+// 🔑 CORRECCIÓN CRÍTICA: sql.js requiere stmt.step() antes de getAsObject()
 function queryRow(sql, params = []) {
   if (!dbInstance) throw new Error('DB no inicializada');
   const stmt = dbInstance.prepare(sql);
   if (params.length) stmt.bind(params);
-  const res = stmt.getAsObject();
+  let res = null;
+  if (stmt.step()) res = stmt.getAsObject(); // ← Avanza a la primera fila
   stmt.free();
-  return res || null;
+  return res;
 }
 
 function queryAll(sql, params = []) {
@@ -87,7 +96,7 @@ function queryAll(sql, params = []) {
   const stmt = dbInstance.prepare(sql);
   if (params.length) stmt.bind(params);
   const results = [];
-  while (stmt.step()) results.push(stmt.getAsObject());
+  while (stmt.step()) results.push(stmt.getAsObject()); // ← Itera filas correctamente
   stmt.free();
   return results;
 }

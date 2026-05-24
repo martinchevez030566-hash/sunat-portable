@@ -10,18 +10,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const api = window.sunatAPI;
 
   try {
+    await api.db.ensureReady();
     if (els.versionBadge) els.versionBadge.textContent = await api.getVersion();
     if (els.storageBadge) {
       els.storageBadge.textContent = (await api.storage.getMode()) === 'ReadOnly' ? '🔒 Solo Lectura' : '💾 Lectura/Escritura';
     }
 
-    let setupCompleted = '0';
     const raw = await api.settings.get('setup_completed');
-    setupCompleted = (raw === null || raw === undefined) ? '0' : String(raw);
+    const setupCompleted = (raw === null || raw === undefined) ? '0' : String(raw);
     console.log(`🔍 [App] setup_leído="${setupCompleted}" | setup_esperado="1"`);
 
     if (setupCompleted === '1') {
-      console.log('✅ [App] Condición cumplida → Mostrando Dashboard');
+      console.log('✅ [App] Mostrando Dashboard');
       els.wizardContainer.style.display = 'none';
       els.dashboardContainer.style.display = 'block';
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
 
     } else {
-      console.log('⚙️ [App] Condición NO cumplida → Mostrando Wizard');
+      console.log('⚙️ [App] Mostrando Wizard');
       els.wizardContainer.style.display = 'block';
       els.dashboardContainer.style.display = 'none';
       if (typeof setupWizard !== 'undefined') setupWizard.init();
@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ [App]', err.message);
     if (els.dashboardContainer) {
       els.dashboardContainer.innerHTML = `<div class="card" style="border:2px solid #ef4444"><h3>Error</h3><p>${err.message}</p><button class="btn-primary" onclick="location.reload()">Reintentar</button></div>`;
+      els.dashboardContainer.style.display = 'block';
     }
   }
 });
