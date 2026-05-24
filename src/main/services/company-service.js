@@ -1,0 +1,43 @@
+const { initDatabase, run, queryAll, queryRow, saveDatabase } = require('../database/connection');
+
+async function createCompany(data) {
+  await initDatabase();
+  const { name, ruc, address, phone, email, web } = data;
+  if (!name || !ruc) throw new Error('Nombre y RUC son obligatorios');
+  if (!/^\d{11}$/.test(ruc)) throw new Error('RUC debe tener 11 dígitos');
+
+  try {
+    run(`INSERT INTO companies (name, ruc, address, phone, email, web, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`, 
+        [name, ruc, address||'', phone||'', email||'', web||'']);
+    saveDatabase();
+    const res = queryRow('SELECT last_insert_rowid() as id');
+    return { success: true, id: res.id };
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint failed: companies.ruc')) {
+      throw new Error('⚠️ Ya existe una empresa con este RUC. Usa otro o edita la existente.');
+    }
+    throw err;
+  }
+}
+
+async function getAllActiveCompanies() {
+  await initDatabase();
+  return queryAll('SELECT id, name, ruc FROM companies WHERE is_active = 1 ORDER BY name');
+}
+
+async function updateActiveCompanyId(companyId) {
+  await initDatabase();
+  run("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES ('active_company_id', ?, datetime('now'))", [String(companyId)]);
+  saveDatabase();
+  return { success: true };
+}
+
+async function getActiveCompanyId() {
+  await initDatabase();
+  const res = queryRow("SELECT value FROM app_settings WHERE key='active_company_id'");
+  if (!res || !res.value) return null;
+  const parsed = parseInt(res.value, 10);
+  return isNaN(parsed) ? null : parsed;
+}
+
+module.exports = { createCompany, getAllActiveCompanies, updateActiveCompanyId, getActiveCompanyId };

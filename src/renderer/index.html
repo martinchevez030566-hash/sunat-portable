@@ -3,17 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
   <title>SUNAT Portable</title>
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
   <header>
-    <h1>SUNAT Portable <span id="version-badge"></span></h1>
-    <p id="status-msg">Cargando sistema...</p>
+    <div class="header-left">
+      <h1>SUNAT Portable <span id="version-badge"></span></h1>
+    </div>
+    <div class="header-right">
+      <select id="company-switcher" title="Seleccionar empresa"></select>
+      <span id="storage-badge" class="badge">🔄</span>
+    </div>
   </header>
+
   <main>
-    <div class="card">✅ Entorno inicializado correctamente</div>
+    <!-- WIZARD -->
+    <div id="wizard-container" class="card wizard-hidden">
+      <h2>🔧 Configuración Inicial</h2>
+      <div class="step-indicators">
+        <span class="step-indicator">1</span>
+        <span class="step-indicator">2</span>
+        <span class="step-indicator">3</span>
+      </div>
+
+      <div id="step-1" class="wizard-step">
+        <h3>Paso 1: Datos Básicos</h3>
+        <label>Nombre *</label>
+        <input type="text" id="w-name" autocomplete="off">
+        <span id="err-name" class="error-msg"></span>
+        
+        <label>RUC (11 dígitos) *</label>
+        <input type="text" id="w-ruc" maxlength="11" inputmode="numeric" autocomplete="off">
+        <span id="err-ruc" class="error-msg"></span>
+        
+        <button id="btn-next-1" class="btn-primary">Siguiente →</button>
+      </div>
+
+      <div id="step-2" class="wizard-step">
+        <h3>Paso 2: Contacto y Dirección</h3>
+        <label>Dirección Fiscal</label>
+        <input type="text" id="w-address" placeholder="Av. Principal 123, Lima">
+        
+        <label>Teléfono</label>
+        <input type="tel" id="w-phone" placeholder="999888777">
+        
+        <label>Email</label>
+        <input type="email" id="w-email" placeholder="facturacion@empresa.com">
+        
+        <label>Sitio Web</label>
+        <input type="text" id="w-web" placeholder="www.empresa.com">
+        
+        <div class="btn-row">
+          <button id="btn-prev-2" class="btn-secondary">← Atrás</button>
+          <button id="btn-next-2" class="btn-primary">Siguiente →</button>
+        </div>
+      </div>
+
+      <div id="step-3" class="wizard-step">
+        <h3>Paso 3: Confirmar y Guardar</h3>
+        <p>Revisa los datos antes de finalizar. Podrás editarlos luego.</p>
+        <pre id="preview-data" class="preview-box"></pre>
+        <p id="wizard-status"></p>
+        <div class="btn-row">
+          <button id="btn-prev-3" class="btn-secondary">← Atrás</button>
+          <button id="btn-finish" class="btn-success">✅ Finalizar Configuración</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-container" class="dashboard-hidden">
+      <div class="card filters-bar">
+        <input type="date" id="filter-from" placeholder="Desde">
+        <input type="date" id="filter-to" placeholder="Hasta">
+        <select id="filter-type">
+          <option value="">Todos</option>
+          <option value="FACTURA">Factura</option>
+          <option value="BOLETA">Boleta</option>
+          <option value="NOTA_CREDITO">NC</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="🔍 Buscar cliente o número...">
+      </div>
+
+      <div class="card table-container">
+        <table id="doc-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Serie-Nro</th>
+              <th>Emisión</th>
+              <th>Cliente</th>
+              <th>RUC</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="doc-table-body"></tbody>
+        </table>
+        <div id="doc-loading" style="display:none; text-align:center; padding:20px; color:#64748b;">Cargando documentos...</div>
+        <div class="pagination">
+          <button id="btn-prev-page" class="btn-secondary" disabled>← Anterior</button>
+          <span id="page-info">Página 1</span>
+          <button id="btn-next-page" class="btn-secondary" disabled>Siguiente →</button>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <script src="scripts/components/company-switcher.js"></script>
+  <script src="scripts/components/document-list.js"></script>
+  <script src="scripts/components/setup-wizard.js"></script>
   <script src="scripts/app.js"></script>
 </body>
 </html>
