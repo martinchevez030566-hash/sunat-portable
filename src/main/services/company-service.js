@@ -1,28 +1,26 @@
-const { initDatabase, run, queryAll, queryRow, saveDatabase } = require('../database/connection');
+const { initDatabase, queryRow, queryAll, run, saveDatabase } = require('../database/connection');
 
 async function createCompany(data) {
   await initDatabase();
-  const { name, ruc, address, phone, email, web } = data;
+  const { name, ruc, address, phone, email, web, logo } = data;
   if (!name || !ruc) throw new Error('Nombre y RUC son obligatorios');
   if (!/^\d{11}$/.test(ruc)) throw new Error('RUC debe tener 11 dígitos');
 
   try {
-    run(`INSERT INTO companies (name, ruc, address, phone, email, web, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`, 
-        [name, ruc, address||'', phone||'', email||'', web||'']);
+    run(`INSERT INTO companies (name, ruc, address, phone, email, web, logo_path, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`, 
+        [name, ruc, address||'', phone||'', email||'', web||'', logo||'']);
     saveDatabase();
     const res = queryRow('SELECT last_insert_rowid() as id');
     return { success: true, id: res.id };
   } catch (err) {
-    if (err.message.includes('UNIQUE constraint failed: companies.ruc')) {
-      throw new Error('⚠️ Ya existe una empresa con este RUC. Usa otro o edita la existente.');
-    }
+    if (err.message.includes('UNIQUE constraint failed: companies.ruc')) throw new Error('⚠️ Ya existe una empresa con este RUC.');
     throw err;
   }
 }
 
 async function getAllActiveCompanies() {
   await initDatabase();
-  return queryAll('SELECT id, name, ruc FROM companies WHERE is_active = 1 ORDER BY name');
+  return queryAll('SELECT id, name, ruc, logo_path, is_active FROM companies ORDER BY name');
 }
 
 async function updateActiveCompanyId(companyId) {
@@ -36,8 +34,14 @@ async function getActiveCompanyId() {
   await initDatabase();
   const res = queryRow("SELECT value FROM app_settings WHERE key='active_company_id'");
   if (!res || !res.value) return null;
-  const parsed = parseInt(res.value, 10);
-  return isNaN(parsed) ? null : parsed;
+  return isNaN(parseInt(res.value, 10)) ? null : parseInt(res.value, 10);
 }
 
-module.exports = { createCompany, getAllActiveCompanies, updateActiveCompanyId, getActiveCompanyId };
+async function toggleCompanyActive({ id, status }) {
+  await initDatabase();
+  run('UPDATE companies SET is_active = ?, updated_at = datetime("now") WHERE id = ?', [status, id]);
+  saveDatabase();
+  return { success: true };
+}
+
+module.exports = { createCompany, getAllActiveCompanies, updateActiveCompanyId, getActiveCompanyId, toggleCompanyActive };
