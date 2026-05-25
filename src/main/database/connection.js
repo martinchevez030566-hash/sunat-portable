@@ -31,7 +31,7 @@ async function initDatabase() {
       const buffer = fs.readFileSync(DB_PATH);
       if (buffer.toString('utf8', 0, 15) !== 'SQLite format 3') throw new Error('Encabezado inválido');
       dbInstance = new SQL.Database(buffer);
-      console.log(`✅ [DB] Cargada desde disco: ${fs.statSync(DB_PATH).size} bytes`);
+      console.log(`✅ [DB] Cargada: ${fs.statSync(DB_PATH).size} bytes`);
     } else {
       dbInstance = new SQL.Database();
       console.log(`🆕 [DB] Nueva instancia en memoria`);
@@ -42,23 +42,6 @@ async function initDatabase() {
     dbInstance = new SQL.Database();
   }
 
-  // Auto-reparar esquema si falta app_settings
-  const tables = dbInstance.exec("SELECT name FROM sqlite_master WHERE type='table'");
-  const tableNames = tables[0]?.values.map(r => r[0]) || [];
-  if (!tableNames.includes('app_settings')) {
-    console.log('⚠️ [DB] Esquema incompleto. Aplicando schema.sql automáticamente...');
-    const schemaPath = path.resolve(__dirname, 'schema.sql');
-    if (fs.existsSync(schemaPath)) {
-      dbInstance.exec(fs.readFileSync(schemaPath, 'utf8'));
-      saveDatabase();
-      console.log('✅ [DB] Esquema aplicado y guardado.');
-    }
-  }
-
-  // 🔍 DIAGNÓSTICO REAL: Volcar app_settings al cargar
-  const allSettings = queryAll("SELECT key, value FROM app_settings");
-  console.log('📊 [DIAG] app_settings en disco:', JSON.stringify(allSettings));
-
   return { db: dbInstance, mode: dbMode };
 }
 
@@ -68,10 +51,9 @@ function saveDatabase() {
     const tmpPath = `${DB_PATH}.tmp`;
     fs.writeFileSync(tmpPath, Buffer.from(dbInstance.export()));
     fs.renameSync(tmpPath, DB_PATH);
-    console.log(`💾 [DB] Escritura atómica exitosa: ${fs.statSync(DB_PATH).size} bytes`);
     return true;
   } catch (err) {
-    console.error(`❌ [DB] Error crítico guardando: ${err.message}`);
+    console.error(`❌ [DB] Error guardando: ${err.message}`);
     return false;
   }
 }
@@ -80,13 +62,13 @@ function closeDatabase() {
   if (dbInstance) { saveDatabase(); dbInstance.close(); dbInstance = null; console.log('🔌 [DB] Cerrada'); }
 }
 
-// 🔑 CORRECCIÓN CRÍTICA: sql.js requiere stmt.step() antes de getAsObject()
+// 🔑 WRAPPERS SEGUROS
 function queryRow(sql, params = []) {
   if (!dbInstance) throw new Error('DB no inicializada');
   const stmt = dbInstance.prepare(sql);
   if (params.length) stmt.bind(params);
   let res = null;
-  if (stmt.step()) res = stmt.getAsObject(); // ← Avanza a la primera fila
+  if (stmt.step()) res = stmt.getAsObject();
   stmt.free();
   return res;
 }
@@ -96,7 +78,7 @@ function queryAll(sql, params = []) {
   const stmt = dbInstance.prepare(sql);
   if (params.length) stmt.bind(params);
   const results = [];
-  while (stmt.step()) results.push(stmt.getAsObject()); // ← Itera filas correctamente
+  while (stmt.step()) results.push(stmt.getAsObject());
   stmt.free();
   return results;
 }

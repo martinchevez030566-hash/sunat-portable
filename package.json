@@ -13,7 +13,10 @@
     "electron-builder": "^24.0.0"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "better-sqlite3": "^9.4.3",
+    "fast-xml-parser": "^5.8.0",
+    "pdf-parse": "^1.1.1",
     "sql.js": "^1.10.3"
   }
 }

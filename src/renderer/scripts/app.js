@@ -21,43 +21,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setup = (raw === null || raw === undefined) ? '0' : String(raw);
     console.log(`🔍 setup="${setup}"`);
 
-    // Toggle Sidebar
-    els.toggleBtn?.addEventListener('click', () => {
-      els.sidebar?.classList.toggle('collapsed');
-    });
+    els.toggleBtn?.addEventListener('click', () => els.sidebar?.classList.toggle('collapsed'));
 
-    // Router de Vistas (CORREGIDO: usa display block/none directamente)
     window.navigateTo = (viewId) => {
       els.views.forEach(v => v.style.display = 'none');
       els.menuItems.forEach(b => b.classList.remove('active'));
-      
       const target = document.getElementById(viewId);
       if (target) target.style.display = 'block';
-      
       const btn = document.querySelector(`.menu-item[data-view="${viewId}"]`);
       if (btn) btn.classList.add('active');
       
-      // Inicializar componentes al mostrar vista
-      if (viewId === 'view-companies') companyMaintenance?.load();
-      if (viewId === 'view-documents') {
-        const cid = document.getElementById('company-switcher')?.value;
-        if (cid) documentList?.init(parseInt(cid));
-      }
+      requestAnimationFrame(() => {
+        if (viewId === 'view-companies') companyMaintenance?.load();
+        if (viewId === 'view-documents') {
+          if (typeof ingestUI !== 'undefined') ingestUI.init();
+          if (typeof exportUI !== 'undefined') exportUI.init();
+          const cid = document.getElementById('company-switcher')?.value;
+          if (cid) documentList?.init(parseInt(cid));
+        }
+      });
     };
 
-    // Bind clicks
-    els.menuItems.forEach(btn => {
-      btn.addEventListener('click', () => window.navigateTo(btn.dataset.view));
-    });
+    els.menuItems.forEach(btn => btn.addEventListener('click', () => window.navigateTo(btn.dataset.view)));
 
     if (setup === '1') {
       console.log('✅ Dashboard mode');
       if (els.wizard) els.wizard.style.display = 'none';
-      
-      if (typeof companySwitcher !== 'undefined') {
-        await companySwitcher.init();
-        companySwitcher.bind();
-      }
+      if (typeof companySwitcher !== 'undefined') { await companySwitcher.init(); companySwitcher.bind(); }
       window.navigateTo('view-dashboard');
     } else {
       console.log('⚙️ Wizard mode');

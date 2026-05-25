@@ -1,73 +1,101 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🟢 [App] Renderizado iniciado');
+  console.log('🟢 [App] Iniciando...');
   const api = window.sunatAPI;
+  
   const els = {
-    versionBadge: document.getElementById('version-badge'),
-    storageBadge: document.getElementById('storage-badge'),
-    companySwitcher: document.getElementById('company-switcher'),
-    wizardContainer: document.getElementById('wizard-container'),
+    version: document.getElementById('version-badge'),
+    storage: document.getElementById('storage-badge'),
+    sidebar: document.getElementById('sidebar'),
+    toggleBtn: document.getElementById('btn-toggle-sidebar'),
     menuItems: document.querySelectorAll('.menu-item'),
-    viewSections: document.querySelectorAll('.view-section')
+    views: document.querySelectorAll('.view-section'),
+    wizard: document.getElementById('wizard-container'),
+    statInvoices: document.getElementById('stat-invoices'),
+    statReceipts: document.getElementById('stat-receipts'),
+    statTotal: document.getElementById('stat-total')
   };
 
-  // 1. Garantizar DB lista
-  await api.db.ensureReady();
-  if (els.versionBadge) els.versionBadge.textContent = await api.getVersion();
-  if (els.storageBadge) els.storageBadge.textContent = (await api.storage.getMode()) === 'ReadOnly' ? '🔒 Solo Lectura' : '💾 Lectura/Escritura';
-
-  // 2. Leer setup_completed
-  const raw = await api.settings.get('setup_completed');
-  const setupCompleted = (raw === null || raw === undefined) ? '0' : String(raw);
-  console.log(`🔍 [App] setup_leído="${setupCompleted}"`);
-
-  // 3. Controlar flujo Wizard / App Principal
-  if (setupCompleted === '1') {
-    els.wizardContainer.style.display = 'none';
-    initMenuRouter();
-    initCompanySwitcher(api);
-    navigateTo('view-dashboard');
-  } else {
-    document.body.style.overflow = 'hidden'; // Bloquear scroll durante wizard
-    if (typeof setupWizard !== 'undefined') setupWizard.init();
-    // Al finalizar wizard, recargar para inicializar UI completa
-    window.addEventListener('wizard:completed', () => {
-      document.body.style.overflow = '';
-      location.reload();
-    }, { once: true });
-  }
-
-  // Router de Menús
-  function initMenuRouter() {
-    els.menuItems.forEach(btn => {
-      btn.addEventListener('click', () => navigateTo(btn.dataset.view));
-    });
-  }
-
-  window.navigateTo = function(viewId) {
-    els.viewSections.forEach(v => v.style.display = 'none');
-    const target = document.getElementById(viewId);
-    if (target) target.style.display = 'block';
-    els.menuItems.forEach(b => b.classList.toggle('active', b.dataset.view === viewId));
+  async function refreshDashboard() {
+    const switcher = document.getElementById('company-switcher');
+    if (!switcher) return console.warn('⚠️ Switcher no encontrado');
     
-    // Inicializar componentes específicos al mostrar vista
-    if (viewId === 'view-companies' && typeof companyMaintenance !== 'undefined') companyMaintenance.load();
-    if (viewId === 'view-documents' && typeof documentList !== 'undefined') {
-      const activeId = els.companySwitcher?.value;
-      if (activeId) documentList.init(parseInt(activeId));
-    }
-  };
+    const companyId = parseInt(switcher.value, 10);
+    console.log(`🖥️ [UI] Refreshing Dashboard | companyId: ${companyId} | valor crudo: "${switcher.value}"`);
+    
+    if (!companyId) return console.warn('⚠️ companyId inválido o vacio');
 
-  function initCompanySwitcher(api) {
-    if (typeof companySwitcher !== 'undefined') {
-      companySwitcher.init();
-      companySwitcher.bind();
-      els.companySwitcher?.addEventListener('change', async (e) => {
-        const newId = parseInt(e.target.value, 10);
-        if (newId) {
-          await api.company.setActive(newId);
-          document.dispatchEvent(new CustomEvent('company:changed', { detail: { companyId: newId } }));
-        }
-      });
+    try {
+      console.log(`🖥️ [UI] Llamando a API...`);
+      const stats = await api.dashboard.getStats(companyId);
+      console.log(`🖥️ [UI] Respuesta recibida de API:`, stats);
+
+      // Validar existencia de elementos DOM
+      if (els.statInvoices) {
+        els.statInvoices.textContent = stats.invoices;
+        console.log(`✅ [UI] DOM Invoices actualizado a: ${stats.invoices}`);
+      } else console.error('❌ [UI] Elemento #stat-invoices NO existe en el DOM');
+
+      if (els.statReceipts) els.statReceipts.textContent = stats.receipts;
+      if (els.statTotal) els.statTotal.textContent = `S/ ${parseFloat(stats.total || 0).toFixed(2)}`;
+      
+    } catch (err) {
+      console.error('❌ [UI] Error cargando dashboard:', err);
     }
+  }
+
+  // Listener global para cambios en dropdown
+  document.addEventListener('change', (e) => {
+    if (e.target.id === 'company-switcher') refreshDashboard();
+  });
+
+  try {
+    await api.db.ensureReady();
+    if (els.version) els.version.textContent = await api.getVersion();
+    if (els.storage) els.storage.textContent = (await api.storage.getMode()) === 'ReadOnly' ? '🔒 Solo Lectura' : '💾 R/W';
+
+    const raw = await api.settings.get('setup_completed');
+    const setup = (raw === null || raw === undefined) ? '0' : String(raw);
+
+    els.toggleBtn?.addEventListener('click', () => els.sidebar?.classList.toggle('collapsed'));
+
+    window.navigateTo = (viewId) => {
+      els.views.forEach(v => v.style.display = 'none');
+      els.menuItems.forEach(b => b.classList.remove('active'));
+      const target = document.getElementById(viewId);
+      if (target) target.style.display = 'block';
+      const btn = document.querySelector(`.menu-item[data-view="${viewId}"]`);
+      if (btn) btn.classList.add('active');
+      
+      if (viewId === 'view-dashboard') {
+        console.log('👁️ [UI] Navegando a Dashboard. Ejecutando refresh...');
+        setTimeout(refreshDashboard, 200); // Pequeño delay para asegurar renderizado del dropdown
+      }
+      if (viewId === 'view-companies') companyMaintenance?.load();
+      if (viewId === 'view-documents') {
+        if (typeof ingestUI !== 'undefined') ingestUI.init();
+        if (typeof exportUI !== 'undefined') exportUI.init();
+        const cid = document.getElementById('company-switcher')?.value;
+        if (cid) documentList?.init(parseInt(cid));
+      }
+    };
+
+    els.menuItems.forEach(btn => btn.addEventListener('click', () => window.navigateTo(btn.dataset.view)));
+
+    if (setup === '1') {
+      console.log('✅ Dashboard mode');
+      if (els.wizard) els.wizard.style.display = 'none';
+      if (typeof companySwitcher !== 'undefined') { 
+        await companySwitcher.init(); 
+        companySwitcher.bind(); 
+      }
+      window.navigateTo('view-dashboard');
+    } else {
+      if (els.wizard) els.wizard.style.display = 'flex';
+      if (typeof setupWizard !== 'undefined') setupWizard.init();
+      window.addEventListener('wizard:completed', () => location.reload(), { once: true });
+    }
+  } catch (err) {
+    console.error('❌ [App] Fatal:', err);
+    if (els.wizard) els.wizard.style.display = 'none';
   }
 });

@@ -34,16 +34,31 @@
       </section>
 
       <section id="view-documents" class="view-section view-hidden">
-        <div class="card filters-bar"><input type="date" id="filter-from"><input type="date" id="filter-to"><select id="filter-type"><option value="">Todos</option><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="NOTA_CREDITO">NC</option></select><input type="text" id="filter-search" placeholder="🔍 Buscar..."></div>
+        <div class="card ingest-section">
+          <h2>📥 Cargar Documentos SUNAT</h2>
+          <p style="color:#64748b; margin-bottom:12px;">Arrastra archivos o haz clic para seleccionar. Se aceptan ZIP, XML o PDF (máx 10MB).</p>
+          <div id="drop-zone" class="drop-zone"><div class="drop-zone-content"><span class="drop-icon">📦</span><span>Suelta archivos aquí</span><span class="drop-hint">.ZIP | .XML | .PDF | Máx 10MB</span></div></div>
+          <input type="file" id="file-input" accept=".zip,.xml,.pdf" multiple hidden>
+          <div id="file-queue" class="file-queue" style="display:none;">
+            <div class="queue-header"><span>📋 Cola de Procesamiento</span><button id="btn-clear-queue" class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;">Limpiar</button></div>
+            <div id="queue-list"></div>
+            <div class="queue-actions"><button id="btn-start-ingest" class="btn-primary" disabled>⚡ Procesar Archivos</button></div>
+          </div>
+        </div>
+
+        <div class="card filters-bar" style="margin-top:16px;">
+          <input type="date" id="filter-from"><input type="date" id="filter-to">
+          <select id="filter-type"><option value="">Todos</option><option value="FACTURA">Factura</option><option value="BOLETA">Boleta</option><option value="NOTA_CREDITO">NC</option></select>
+          <input type="text" id="filter-search" placeholder="🔍 Buscar...">
+          <button id="btn-export-csv" class="btn-secondary" title="Descargar reporte">📥 Exportar CSV</button>
+        </div>
         <div class="card table-container"><table id="doc-table"><thead><tr><th>Tipo</th><th>Serie-Nro</th><th>Emisión</th><th>Cliente</th><th>RUC</th><th>Total</th><th>Estado</th></tr></thead><tbody id="doc-table-body"></tbody></table><div id="doc-loading" style="display:none;padding:20px;text-align:center;color:#64748b;">Cargando...</div><div class="pagination"><button id="btn-prev-page" class="btn-secondary" disabled>←</button><span id="page-info">Pág 1</span><button id="btn-next-page" class="btn-secondary" disabled>→</button></div></div>
       </section>
 
       <section id="view-companies" class="view-section view-hidden">
         <div class="card"><div class="section-header"><h2>Mantenimiento de Empresas</h2><button id="btn-new-company" class="btn-primary">+ Nueva</button></div><table id="company-table"><thead><tr><th>ID</th><th>Razón Social</th><th>RUC</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="company-table-body"></tbody></table></div>
-        
         <div id="company-form-container" class="card view-hidden" style="margin-top:16px;">
-          <h3 id="company-form-title">Nueva Empresa</h3>
-          <input type="hidden" id="cf-id">
+          <h3 id="company-form-title">Nueva Empresa</h3><input type="hidden" id="cf-id">
           <div class="form-grid">
             <label>Razón Social *<input type="text" id="cf-name"></label>
             <label>RUC (11) *<input type="text" id="cf-ruc" maxlength="11"></label>
@@ -79,6 +94,8 @@
   <script src="scripts/components/company-switcher.js"></script>
   <script src="scripts/components/company-maintenance.js"></script>
   <script src="scripts/components/document-list.js"></script>
+  <script src="scripts/components/ingest-ui.js"></script>
+  <script src="scripts/components/export-ui.js"></script>
   <script src="scripts/components/setup-wizard.js"></script>
   <script src="scripts/app.js"></script>
 </body>

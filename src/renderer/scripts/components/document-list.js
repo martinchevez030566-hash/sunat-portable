@@ -1,7 +1,11 @@
 const documentList = {
   state: { companyId: null, page: 1, limit: 20, filters: {} },
-  
+
   async init(companyId) {
+    if (!companyId) {
+      console.warn('⚠️ [DocumentList] companyId es null. Abortando carga.');
+      return;
+    }
     this.state.companyId = companyId;
     this.state.page = 1;
     this.bindFilters();
@@ -9,36 +13,36 @@ const documentList = {
   },
 
   bindFilters() {
-    const els = ['filter-from','filter-to','filter-type','filter-search','btn-prev-page','btn-next-page'];
-    const listeners = {
-      'filter-from': () => { this.state.page = 1; this.load(); },
-      'filter-to': () => { this.state.page = 1; this.load(); },
-      'filter-type': () => { this.state.page = 1; this.load(); },
-      'filter-search': (e) => { clearTimeout(this._searchTimer); this._searchTimer = setTimeout(() => { this.state.page = 1; this.load(); }, 500); },
-      'btn-prev-page': () => { if(this.state.page>1){ this.state.page--; this.load(); } },
-      'btn-next-page': () => { this.state.page++; this.load(); }
+    const els = {
+      from: document.getElementById('filter-from'),
+      to: document.getElementById('filter-to'),
+      type: document.getElementById('filter-type'),
+      search: document.getElementById('filter-search'),
+      prev: document.getElementById('btn-prev-page'),
+      next: document.getElementById('btn-next-page')
     };
-    
-    els.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.removeEventListener('click', listeners[id]); // Limpiar previos
-        el.removeEventListener('change', listeners[id]);
-        el.removeEventListener('input', listeners[id]);
-        
-        const event = id.includes('search') ? 'input' : (id.includes('btn') ? 'click' : 'change');
-        el.addEventListener(event, listeners[id]);
-      }
-    });
+
+    if (els.from) els.onchange = () => { this.state.page = 1; this.load(); };
+    if (els.to) els.onchange = () => { this.state.page = 1; this.load(); };
+    if (els.type) els.onchange = () => { this.state.page = 1; this.load(); };
+    if (els.search) els.oninput = () => {
+      clearTimeout(this._searchTimer);
+      this._searchTimer = setTimeout(() => { this.state.page = 1; this.load(); }, 500);
+    };
+    if (els.prev) els.onclick = () => { if(this.state.page > 1) { this.state.page--; this.load(); } };
+    if (els.next) els.onclick = () => { this.state.page++; this.load(); };
   },
 
   async load() {
     const tbody = document.getElementById('doc-table-body');
     const loading = document.getElementById('doc-loading');
-    if (!tbody) return;
+    const pageInfo = document.getElementById('page-info');
+    const btnPrev = document.getElementById('btn-prev-page');
+    const btnNext = document.getElementById('btn-next-page');
 
+    if (!tbody) return;
     tbody.innerHTML = '';
-    loading.style.display = 'block';
+    if (loading) loading.style.display = 'block';
 
     try {
       this.state.filters.from = document.getElementById('filter-from')?.value || '';
@@ -53,24 +57,36 @@ const documentList = {
         limit: this.state.limit
       });
 
-      if (!res.success) throw new Error(res.error);
-      
-      tbody.innerHTML = res.data.length ? res.data.map(d => `
-        <tr>
-          <td>${d.type}</td><td>${d.series}-${d.number}</td>
-          <td>${new Date(d.issue_date).toLocaleDateString('es-PE')}</td>
-          <td>${d.client_name || '-'}</td><td>${d.client_ruc || '-'}</td>
-          <td class="text-right">S/ ${parseFloat(d.total).toFixed(2)}</td>
-          <td><span class="badge valid">${d.status}</span></td>
-        </tr>`).join('') : `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">No hay documentos en este rango</td></tr>`;
-        
-      document.getElementById('page-info').textContent = `Pág ${res.page} de ${res.totalPages || 1}`;
-      document.getElementById('btn-prev-page').disabled = res.page <= 1;
-      document.getElementById('btn-next-page').disabled = res.page >= res.totalPages;
+      if (!res.success) throw new Error(res.error || 'Error desconocido del servidor');
+
+      if (!res.data || res.data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">📄 No hay documentos en este rango</td></tr>`;
+      } else {
+        tbody.innerHTML = res.data.map(d => `
+          <tr>
+            <td>${d.type || '-'}</td>
+            <td>${d.series || ''}-${d.number || ''}</td>
+            <td>${d.issue_date ? new Date(d.issue_date).toLocaleDateString('es-PE') : '-'}</td>
+            <td>${d.client_name || '-'}</td>
+            <td>${d.client_ruc || '-'}</td>
+            <td style="text-align:right;">S/ ${parseFloat(d.total || 0).toFixed(2)}</td>
+            <td><span class="badge ${d.status === 'valid' ? 'valid' : ''}">${d.status || 'PENDIENTE'}</span></td>
+          </tr>
+        `).join('');
+      }
+
+      if (pageInfo) pageInfo.textContent = `Pág ${res.page} de ${res.totalPages || 1}`;
+      if (btnPrev) btnPrev.disabled = res.page <= 1;
+      if (btnNext) btnNext.disabled = res.page >= res.totalPages;
+
     } catch (err) {
-      tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px;">⚠️ ${err.message}</td></tr>`;
+      // 🔑 LOG EXPLÍCITO PARA DIAGNÓSTICO
+      console.error('❌ [DocumentList] FALLO DETALLADO:', err.message || err);
+      tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px;">⚠️ ${err.message || 'Error al cargar documentos'}</td></tr>`;
     } finally {
-      loading.style.display = 'none';
+      if (loading) loading.style.display = 'none';
     }
   }
 };
+
+window.documentList = documentList;
