@@ -52,7 +52,47 @@
           <input type="text" id="filter-search" placeholder="🔍 Buscar...">
           <button id="btn-export-csv" class="btn-secondary" title="Descargar reporte">📥 Exportar CSV</button>
         </div>
-        <div class="card table-container"><table id="doc-table"><thead><tr><th>Tipo</th><th>Serie-Nro</th><th>Emisión</th><th>Cliente</th><th>RUC</th><th>Total</th><th>Estado</th></tr></thead><tbody id="doc-table-body"></tbody></table><div id="doc-loading" style="display:none;padding:20px;text-align:center;color:#64748b;">Cargando...</div><div class="pagination"><button id="btn-prev-page" class="btn-secondary" disabled>←</button><span id="page-info">Pág 1</span><button id="btn-next-page" class="btn-secondary" disabled>→</button></div></div>
+        <div class="card table-container"><table id="doc-table"><thead><tr><th>Tipo</th><th>Serie-Nro</th><th>Emisión</th><th>Cliente</th><th>RUC</th><th>Total</th><th>Acciones</th></tr></thead><tbody id="doc-table-body"></tbody></table><div id="doc-loading" style="display:none;padding:20px;text-align:center;color:#64748b;">Cargando...</div><div class="pagination"><button id="btn-prev-page" class="btn-secondary" disabled>←</button><span id="page-info">Pág 1</span><button id="btn-next-page" class="btn-secondary" disabled>→</button></div></div>
+
+        <!-- 🔹 MODAL DE DETALLE DE DOCUMENTO -->
+        <div id="doc-detail-modal" class="modal-overlay" style="display:none;">
+          <div class="modal-box">
+            <div class="modal-header">
+              <h3 id="modal-title">Detalle de Documento</h3>
+              <button class="modal-close" onclick="document.getElementById('doc-detail-modal').style.display='none'">&times;</button>
+            </div>
+            <div class="modal-body">
+              <div class="detail-grid">
+                <div class="detail-item"><span class="detail-label">Tipo:</span><span id="dt-type">-</span></div>
+                <div class="detail-item"><span class="detail-label">Serie-Número:</span><span id="dt-series-number">-</span></div>
+                <div class="detail-item"><span class="detail-label">Fecha Emisión:</span><span id="dt-issue-date">-</span></div>
+                <div class="detail-item"><span class="detail-label">Empresa:</span><span id="dt-company">-</span></div>
+                <div class="detail-item"><span class="detail-label">Proveedor (RUC):</span><span id="dt-supplier">-</span></div>
+                <div class="detail-item"><span class="detail-label">Cliente (RUC):</span><span id="dt-client">-</span></div>
+                <div class="detail-item"><span class="detail-label">Subtotal:</span><span id="dt-subtotal">-</span></div>
+                <div class="detail-item"><span class="detail-label">IGV (18%):</span><span id="dt-igv">-</span></div>
+                <div class="detail-item"><span class="detail-label">Total:</span><span id="dt-total" class="total-highlight">-</span></div>
+                <div class="detail-item"><span class="detail-label">Moneda:</span><span id="dt-currency">-</span></div>
+                <div class="detail-item"><span class="detail-label">Estado:</span><span id="dt-status">-</span></div>
+                <div class="detail-item"><span class="detail-label">Notas:</span><textarea id="dt-notes" rows="3" placeholder="Agregar notas..."></textarea></div>
+              </div>
+              
+              <h4 style="margin-top:20px; border-bottom:1px solid #e2e8f0; padding-bottom:8px;">📦 Ítems del Documento</h4>
+              <div class="items-table-container">
+                <table class="items-table">
+                  <thead><tr><th>#</th><th>Descripción</th><th>Cant.</th><th>Unit.</th><th>Total</th></tr></thead>
+                  <tbody id="dt-items-body"></tbody>
+                  <tfoot><tr><td colspan="4" style="text-align:right; font-weight:600;">TOTAL ÍTEMS:</td><td id="dt-items-total" style="font-weight:600;">-</td></tr></tfoot>
+                </table>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-secondary" onclick="document.getElementById('doc-detail-modal').style.display='none'">Cerrar</button>
+              <button class="btn-primary" onclick="alert('✅ Funcionalidad de guardado de notas en desarrollo')">💾 Guardar Notas</button>
+              <button class="btn-success" onclick="alert('🖨️ Impresión en desarrollo')">🖨️ Imprimir</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section id="view-companies" class="view-section view-hidden">

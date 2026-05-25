@@ -6,14 +6,14 @@ function parseSunatXML(xmlString) {
       return match[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim();
     };
 
-    const typeCode = extract('(?:cbc:)?InvoiceTypeCode[^>]*>\\s*(\\d+)\\s*</');
+    const typeCode = extract('<(?:cbc:)?InvoiceTypeCode[^>]*>\\s*(\\d+)\\s*</');
     const tipoMap = { '01': 'FACTURA', '03': 'BOLETA', '07': 'NOTA_CREDITO', '08': 'NOTA_DEBITO' };
     const tipo = tipoMap[typeCode] || 'DOCUMENTO';
 
     const serieNumero = extract('<cbc:ID[^>]*>\\s*([FBTPNE]\\d{3}[-\\s]?\\d{4,10})\\s*</')?.replace(/[\s-]/g, '') || '';
 
-    const fechaEmision = extract('(?:cbc:)?IssueDate[^>]*>\\s*(\\d{4}-\\d{2}-\\d{2})\\s*</');
-    const moneda = extract('(?:cbc:)?DocumentCurrencyCode[^>]*>\\s*([A-Z]{3})\\s*</') || 'PEN';
+    const fechaEmision = extract('<(?:cbc:)?IssueDate[^>]*>\\s*(\\d{4}-\\d{2}-\\d{2})\\s*</');
+    const moneda = extract('<(?:cbc:)?DocumentCurrencyCode[^>]*>\\s*([A-Z]{3})\\s*</') || 'PEN';
 
     const proveedorRuc = extract('AccountingSupplierParty[\\s\\S]{0,1000}?<cbc:ID[^>]*>\\s*(\\d{11})\\s*</');
     const clienteRuc = extract('AccountingCustomerParty[\\s\\S]{0,1000}?<cbc:ID[^>]*>\\s*(\\d{11})\\s*</');
@@ -53,13 +53,22 @@ function parseSunatXML(xmlString) {
       });
     }
 
-    console.log(`✅ [XML] ${serieNumero} | Cliente: ${clienteNombre || 'N/A'} | Total: S/ ${total.toFixed(2)}`);
+    console.log(`✅ [XML] ${serieNumero || 'S/N'} | Cliente: ${clienteNombre || 'N/A'} | Total: S/ ${total.toFixed(2)} | Items: ${items.length}`);
 
     return {
       success: true,
       data: {
-        tipo, serieNumero, fechaEmision, moneda, proveedorRuc, clienteRuc, clienteNombre,
-        subtotal: subtotal || 0, igv: igv || 0, total: total || 0, items
+        tipo,
+        serieNumero,
+        fechaEmision,
+        moneda,
+        proveedorRuc,
+        clienteRuc,
+        clienteNombre,
+        subtotal: subtotal || 0,
+        igv: igv || 0,
+        total: total || 0,
+        items
       }
     };
   } catch (err) {

@@ -23,7 +23,12 @@ async function runBootstrap() {
     console.log(`📄 [Bootstrap] Creando esquema: ${missing.join(', ')}`);
     exec(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'));
   }
-
+try {
+  queryRow("ALTER TABLE documents ADD COLUMN notes TEXT DEFAULT ''");
+  console.log('✅ [Bootstrap] Columna notes agregada a documents');
+} catch (e) {
+  if (!e.message.includes('duplicate column')) console.warn('⚠️ [Bootstrap] notes ya existe:', e.message);
+}
   // Verificar estado actual ANTES de insertar defaults
   const setupRes = queryRow("SELECT value FROM app_settings WHERE key='setup_completed'");
   const currentSetup = setupRes?.value;

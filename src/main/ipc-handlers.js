@@ -129,6 +129,16 @@ function registerIpcHandlers() {
       return { invoices: 0, receipts: 0, total: 0 };
     }
   });
+    // 🔹 NUEVO: Obtener documento completo por ID
+  ipcMain.handle('document:get-by-id', async (event, id) => {
+    try {
+      const doc = await getDocumentById(id);
+      return { success: true, data: doc };
+    } catch (err) {
+      console.error('❌ [IPC] document:get-by-id error:', err.message);
+      return { success: false, error: err.message };
+    }
+  });
   console.log('✅ [IPC] TODOS los handlers registrados.');
 }
 module.exports = { registerIpcHandlers };
